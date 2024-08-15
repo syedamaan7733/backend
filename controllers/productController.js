@@ -19,7 +19,7 @@ const getAllProducts = async (req, res) => {
   const products = await Product.find({})
     .sort({ createdAt: -1 })
     .select(
-      "brand colors price images itemSet material category gender article"
+      "brand colors price images itemSet material category gender article createdAt"
     );
   console.log("OK");
 
@@ -70,10 +70,10 @@ const searchProduct = async (req, res) => {
     // Construct the search query
     const searchQuery = {
       $or: [
+        { gender: { $regex: q } }, // Case-insensitive search in gender
         { brand: { $regex: q, $options: "i" } }, // Case-insensitive search in brand
         { category: { $regex: q, $options: "i" } }, // Case-insensitive search in category
         { article: { $regex: q, $options: "i" } }, // Case-insensitive search in article
-        { gender: { $regex: q, $options: "i" } }, // Case-insensitive search in gender
       ],
     };
 
@@ -83,7 +83,7 @@ const searchProduct = async (req, res) => {
 
     // Execute the query with pagination
     const products = await Product.find(searchQuery)
-      .select("brand article category") // Only select the productName field
+      .select("brand article category gender") // Only select the productName field
       .skip(skip) // Skip the appropriate number of results
       .limit(limit); // Limit the number of results returned
 
@@ -181,5 +181,4 @@ module.exports = {
   searchProduct,
   searchCategory,
   querySearch,
-
 };

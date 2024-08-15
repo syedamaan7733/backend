@@ -2,42 +2,60 @@ const { StatusCodes } = require("http-status-codes");
 const validator = require("validator");
 const User = require("../models/User");
 const CustomError = require("../errors");
-const { createJWT, createTokenUser, attach_ResTOCookie } = require("../utils");
-const { default: Domain } = require("twilio/lib/base/Domain");
-const { signedCookie } = require("cookie-parser");
+const {
+  createJWT,
+  createTokenUser,
+  validateIndianMobileNumber,
+  attach_ResTOCookie,
+} = require("../utils");
 
 const register = async (req, res) => {
   // scopping data from upcomming request
-  const { name, phone, email, password } = req.body;
+  const { name, shopName, password, address, phone } = req.body;
 
+  const isValidNum = validateIndianMobileNumber(phone);
+
+  if (!isValidNum) {
+    throw new CustomError.BadRequestError("Your nubmer is invalid.");
+  }
   // checking if email already in Database or not
-  if (email) {
-    const isEmailAlreadyExists = await User.findOne({ email });
+  if (phone) {
+    const isPhoneAlreadyExists = await User.findOne({ phone });
     // console.log(isEmailAlreadyExists);
-    if (isEmailAlreadyExists) {
-      throw new CustomError.BadRequestError("Email Alerady Exist.");
+    if (isPhoneAlreadyExists) {
+      throw new CustomError.BadRequestError("Phone Alerady Exist.");
     }
   }
+
   // first registerd User is Always an Admin
   const isFistAdmin = (await User.countDocuments({})) === 0;
   const role = isFistAdmin ? "admin" : "user";
 
   // creating a new User
-  const user = await User.create({ name, phone, email, password, role });
+  const user = await User.create({
+    name,
+    phone,
+    shopName,
+    password,
+    role,
+    address,
+  });
 
   // extracting user data and createing cookie for forwarding as response
   const tokenUser = createTokenUser(user);
-  // console.log(tokenUser);
-  // attach_ResTOCookie({ res, user: tokenUser });
 
   // ALhumdulillah
-  res.status(StatusCodes.CREATED).json({ tokenUser });
+  res
+    .status(StatusCodes.CREATED)
+    .json({ tokenUser, msg: "You have been registered. Please login!" });
 };
 
 const logIn = async (req, res) => {
   const { identifier, password } = req.body;
   if (!identifier || !password) {
-    throw new CustomError.BadRequestError("Please provide email and password");
+    throw new CustomError.BadRequestError(
+      "Please provide Credentials and password"
+    );
   }
   const isEmail = validator.isEmail(identifier);
   // console.log(isEmail);
@@ -55,22 +73,9 @@ const logIn = async (req, res) => {
   if (!isPasswordCorrect) {
     throw new CustomError.UnauthenticatedError("Invalid Password");
   }
+
   const userToken = createTokenUser(user);
   const token = createJWT({ payload: userToken });
-  // console.log(token);
-  // res.cookie("jwtoken", token, {
-  //   httpOnly: true,
-  //   secure: true,
-  //   // sameSite: "None",
-  //   // path: "/",
-  //   signed: true,
-  //   // Domain: "http://localhost:5173/",
-  // });
-
-  // console.log(req.signedCookies);
-  // attach_ResTOCookie({ res, user: userToken });
-  // res.cookie("token", "hellotoken");
-  // console.log(token);
 
   res.status(StatusCodes.OK).json({ token, userToken });
 };

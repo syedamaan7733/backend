@@ -3,6 +3,7 @@ const CartItem = require("../models/CartItem");
 const Product = require("../models/Product");
 const CustomError = require("../errors");
 const { StatusCodes } = require("http-status-codes");
+const { logIn } = require("./authControllers");
 
 const addToCart = async (req, res) => {
   const { productId, quantity, itemSet, color } = req.body;
@@ -80,11 +81,20 @@ const addToCart = async (req, res) => {
 const getCart = async (req, res) => {
   const userId = req.user.userId;
 
+  // Retrieve the cart and populate the productId
   const cart = await Cart.findOne({ userId }).populate("items.productId");
 
   if (!cart) {
     throw new CustomError.NotFoundError("Cart not found");
   }
+
+  // Sort the items within the cart by the createdAt field
+  cart.items.sort((a, b) => {
+    return new Date(b.createdAt) - new Date(a.createdAt); // Ascending order (oldest first)
+    // To sort in descending order (newest first), use:
+    // return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
   res.status(StatusCodes.OK).json({ data: cart });
 };
 
@@ -121,15 +131,21 @@ const updateCartItem = async (req, res) => {
   const userId = req.user.userId;
   const cartItemId = req.params.id;
   const { quantity, itemSet, color } = req.body;
+  // console.log(userId, cartItemId, req.body);
+
   try {
     // Find the user's cart
     const cart = await Cart.findOne({ userId });
+    // console.log(cart);
+
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
     // Find the cart item
     const cartItem = cart.items.id(cartItemId);
+    // console.log(cartItem);
+
     if (!cartItem) {
       return res.status(404).json({ message: "CartItem not found" });
     }
@@ -154,6 +170,9 @@ const updateCartItem = async (req, res) => {
     );
 
     await cart.save();
+    res
+      .status(StatusCodes.OK)
+      .json({ msg: "cart have been updated", success: true, data: cartItem });
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)

@@ -12,6 +12,6 @@ router.route("/").get(authenticateUser, getCart);
 router
   .route("/:id")
   .delete(authenticateUser, removeitem)
-  .put(authenticateUser, updateCartItem);
+  .patch(authenticateUser, updateCartItem);
 
 module.exports = router;

@@ -14,18 +14,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true,
     required: [true, "Please provide yur phone number."],
-    // validate: {
-    //   validator: validator.isMobilePhone,
-    //   massage: "Please provide a valid phone number.",
-    // },
   },
-  email: {
+  shopName: {
     type: String,
-    unique: [true, "email already exist."],
-    validate: {
-      validator: validator.isEmail,
-      message: "Please provide valid email",
-    },
+    required: [true, "Shop name must required."],
   },
   password: {
     type: String,
@@ -36,6 +28,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["admin", "user"],
     default: "user",
+  },
+  address: {
+    type: String,
+    required: [true, "Please provide the address."],
+    maxlength: 100,
   },
 });
 

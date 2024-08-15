@@ -12,7 +12,7 @@ const createOrder = async (req, res) => {
     const cart = await Cart.findOne({ userId });
 
     if (!cart || cart.items.length === 0) {
-      throw new CustomError.NotFoundError("Cart is empty or not found", 400);
+      throw new CustomError.NotFoundError("Cart is empty or not found", 404);
     }
 
     // Create an order
@@ -43,7 +43,10 @@ const createOrder = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
   const { orderId } = req.params;
-  const { status } = req.body;
+  let { status } = req.body;
+
+  // Convert the status to lowercase
+  status = status.toLowerCase();
 
   try {
     const order = await Order.findByIdAndUpdate(
@@ -77,9 +80,11 @@ const orderHistory = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ success: true, msg: "No order found." });
     } else {
+      const orderCount = await Order.countDocuments({ userId });
       res.status(StatusCodes.OK).json({
         success: true,
         data: orders,
+        orderCount: orderCount,
       });
     }
   } catch (error) {
@@ -89,7 +94,10 @@ const orderHistory = async (req, res) => {
 
 const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find()
+      .populate({ path: "userId", select: "name" })
+      .populate({ path: "items.productId", select: "brand article" })
+      .sort({ createdAt: -1 });
 
     if (orders.length === 0) {
       return res
