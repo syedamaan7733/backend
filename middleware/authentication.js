@@ -33,7 +33,7 @@ const authenticateUser = async (req, res, next) => {
 
 const authorizePermission = (...roles) => {
   return (req, res, next) => {
-    console.log(req.user.role);
+    // console.log(req.user.role);
 
     if (!roles.includes(req.user.role)) {
       // console.log("check error");

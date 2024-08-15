@@ -32,6 +32,7 @@ const createOrder = async (req, res) => {
 
     res.status(StatusCodes.CREATED).json({
       success: true,
+      msg: "Order have beeen created",
       data: newOrder,
     });
   } catch (error) {
@@ -71,9 +72,13 @@ const updateOrderStatus = async (req, res) => {
 };
 
 const orderHistory = async (req, res) => {
-  const userId = req.user.role === "admin" ? req.body.userId : req.user.userId;
+  const { userId } =
+    req.user.role === "admin" ? req.body.userId : req.user.userId;
+  // console.log(userId);
+
   try {
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    const orders = await Order.findOne(userId).sort({ createdAt: -1 });
+    // console.log(orders);
 
     if (orders.length === 0) {
       return res
@@ -96,7 +101,7 @@ const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate({ path: "userId", select: "name" })
-      .populate({ path: "items.productId", select: "brand article" })
+      .populate("items.productId")
       .sort({ createdAt: -1 });
 
     if (orders.length === 0) {

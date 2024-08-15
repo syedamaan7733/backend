@@ -71,10 +71,7 @@ const addToCart = async (req, res) => {
   } catch (error) {
     // console.log(error);
 
-    throw new CustomError.BadRequestError(
-      "Something went wrong while adding into the cart....",
-      error
-    );
+    throw new CustomError.BadRequestError(error);
   }
 };
 
