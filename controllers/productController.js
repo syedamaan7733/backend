@@ -94,6 +94,7 @@ const searchCategory = async (req, res) => {
 
 const searchProductsByCategory = async (req, res) => {
   const { category } = req.query; // Use req.query to get the category
+  console.log(category);
 
   try {
     // Find all products in the Product collection that match the given category

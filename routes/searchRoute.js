@@ -9,6 +9,7 @@ const {
 router.get("/", searchProduct);
 
 router.get("/category", searchCategory);
+router.get("/category/specific", searchProductsByCategory);
 router.get("/q", querySearch);
 
 module.exports = router;
