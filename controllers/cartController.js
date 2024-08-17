@@ -7,71 +7,56 @@ const { logIn } = require("./authControllers");
 
 const addToCart = async (req, res) => {
   const { productId, quantity, itemSet, color } = req.body;
-  // console.log(req.body);
-
-  // console.log(itemSet);
-
   const userId = req.user.userId;
-  //   console.log(req.user.userId);
+  // console.log(req.user.role);
+
   try {
     const product = await Product.findById(productId);
-    // console.log(product);
 
     if (!product) {
       throw new CustomError.NotFoundError("Product not found");
     }
 
-    // Calculate the price for the given quantity
     const price = product.price * quantity;
 
-    // Create a new CartItem
-    const cartItem = new CartItem({
-      productId,
-      quantity,
-      price,
-      itemSet,
-      color,
-    });
-
-    // Find the user's cart or create a new one
     let cart = await Cart.findOne({ userId });
-    // console.log(cart);
 
     if (!cart) {
       cart = new Cart({ userId, items: [], totalPrice: 0, totalItems: 0 });
     }
 
-    // const itemExists = cart.items.some(
-    //   (item) => console.log(item.itemSet, cartItem.itemSet)
-    //   // item.productId.toString() === cartItem.productId &&
-    //   // item.color === cartItem.color &&
-    //   // item.itemSet.length === cartItem.itemSet.length &&
-    //   // item.itemSet.every(
-    //   //   (set, index) =>
-    //   //     set.size === cartItem.itemSet[index].size &&
-    //   //     set.length === cartItem.itemSet[index].length
-    //   // )
-    // );
-    // console.log(itemExists);
+    // Check if the item already exists in the cart with the same productId, color, and itemSet
+    const existingCartItem = cart.items.find(
+      (item) =>
+        item.productId.toString() === productId &&
+        item.color === color &&
+        JSON.stringify(item.itemSet) === JSON.stringify(itemSet)
+    );
 
-    // if (itemExists) {
-    //   throw new CustomError.ForbiddenError("Item allready exist in cart.");
-    // }
+    if (existingCartItem) {
+      // Update the existing cart item's quantity and price
+      existingCartItem.quantity += quantity;
+      existingCartItem.price += price;
+    } else {
+      // Create a new CartItem
+      const cartItem = new CartItem({
+        productId,
+        quantity,
+        price,
+        itemSet,
+        color,
+      });
+      cart.items.push(cartItem);
+    }
 
-    // Add the CartItem to the cart
-    cart.items.push(cartItem);
     cart.totalPrice += price;
     cart.totalItems += quantity;
 
     await cart.save();
-    console.log(cart);
 
     res.status(StatusCodes.CREATED).json({ success: true, data: cart });
-    //   console.log("adding to kart");
   } catch (error) {
-    // console.log(error);
-
-    throw new CustomError.BadRequestError(error);
+    throw new CustomError.BadRequestError(error.message);
   }
 };
 
