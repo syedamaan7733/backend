@@ -3,11 +3,10 @@ const {
   searchProduct,
   searchCategory,
   querySearch,
+  searchProductsByCategory,
 } = require("../controllers/productController");
 
-
 router.get("/", searchProduct);
-
 
 router.get("/category", searchCategory);
 router.get("/q", querySearch);

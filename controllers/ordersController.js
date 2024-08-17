@@ -46,6 +46,10 @@ const updateOrderStatus = async (req, res) => {
   const { orderId } = req.params;
   let { status } = req.body;
 
+  if (!orderId) {
+    throw new CustomError.BadRequestError("Please do provide OrderId");
+  }
+
   // Convert the status to lowercase
   status = status.toLowerCase();
 
@@ -77,19 +81,21 @@ const orderHistory = async (req, res) => {
   // console.log(userId);
 
   try {
-    const orders = await Order.findOne(userId).sort({ createdAt: -1 });
-    // console.log(orders);
+    const orders = await Order.find(userId).sort({ createdAt: -1 });
+    const countOrder = orders.length;
 
     if (orders.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ success: true, msg: "No order found." });
     } else {
-      const orderCount = await Order.countDocuments({ userId });
+      // const orderCount = await Order.countDocuments(userId);
+      // console.log(orderCount);
+
       res.status(StatusCodes.OK).json({
         success: true,
         data: orders,
-        orderCount: orderCount,
+        totalOrder: countOrder,
       });
     }
   } catch (error) {

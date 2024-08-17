@@ -3,12 +3,6 @@ const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
 
 const createProduct = async (req, res) => {
-  // console.log(req.body);
-  // console.log("cookies:", req.cookies);
-  // console.log(req.body.items);
-  // const {
-  //   body: { items },
-  // } = req.body;
   const items = req.body;
   req.body.user = req.user.userId;
   const product = await Product.create(items);
@@ -60,7 +54,65 @@ const deleteProduct = async (req, res) => {
   await Product.deleteOne({ _id: productId });
   res.status(StatusCodes.OK).json({ msg: "Product have been deleted ;)" });
 };
-// /*
+
+/*
+ *____________________________*
+ |CATEGORY RELATED CONTROLLERS|
+  ____________________________
+*/
+
+const searchCategory = async (req, res) => {
+  const { gender } = req.query;
+  // console.log(gender);
+
+  try {
+    // Find all distinct categories in the Product collection based on the gender
+    const categories = await Product.distinct("category", { gender: gender });
+    // console.log(categories);
+    //
+    // Send the list of categories as a response
+    res.status(200).json({
+      success: true,
+      categories: categories,
+      totalCategory: `Total category in ${gender} section: ${categories.length}`,
+    });
+  } catch (error) {
+    // Handle errors
+    console.error("Error fetching categories:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching categories",
+      error: error.message,
+    });
+  }
+};
+
+const searchProductsByCategory = async (req, res) => {
+  const { category } = req.query; // Use req.query to get the category
+
+  try {
+    // Find all products in the Product collection that match the given category
+    // Sort by 'createdAt' field in descending order to get the latest items first
+    const products = await Product.find({ category: category }).sort({
+      createdAt: -1,
+    });
+    console.log(products);
+
+    // Send the list of products as a response
+    res.status(200).json({
+      success: true,
+      products: products,
+    });
+  } catch (error) {
+    // Handle errors
+    console.error("Error fetching products:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching products",
+      error: error.message,
+    });
+  }
+};
 
 // search functionality
 const searchProduct = async (req, res) => {
@@ -102,27 +154,6 @@ const searchProduct = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-const searchCategory = async (req, res) => {
-  try {
-    // Find all distinct categories in the Product collection
-    const categories = await Product.distinct("category");
-
-    // Send the list of categories as a response
-    res.status(200).json({
-      success: true,
-      categories: categories,
-    });
-  } catch (error) {
-    // Handle errors
-    console.error("Error fetching categories:", error);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while fetching categories",
-      error: error.message,
-    });
   }
 };
 
@@ -180,5 +211,6 @@ module.exports = {
   deleteProduct,
   searchProduct,
   searchCategory,
+  searchProductsByCategory,
   querySearch,
 };
