@@ -66,14 +66,19 @@ const searchCategory = async (req, res) => {
   // console.log(gender);
 
   try {
-    // Find all distinct categories in the Product collection based on the gender
-    const categories = await Product.distinct("category", { gender: gender });
-    // console.log(categories);
+    let categories;
+    if (!gender) {
+      categories = await Product.distinct("category");
+    } else {
+      // Find all distinct categories in the Product collection based on the gender
+      categories = await Product.distinct("category", { gender: gender });
+      // console.log(categories);
+    }
     //
     // Send the list of categories as a response
     res.status(200).json({
       success: true,
-      categories: categories,
+      data: categories,
       totalCategory: `Total category in ${gender} section: ${categories.length}`,
     });
   } catch (error) {
