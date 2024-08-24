@@ -87,7 +87,7 @@ const orderHistory = async (req, res) => {
       })
       .populate({
         path: "items.productId",
-        select: "article images ",
+        select: "brand article images ",
       })
 
       .sort({ createdAt: -1 });
