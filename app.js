@@ -7,7 +7,7 @@ const app = express();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
-const cloudinary = require("cloudinary").v2;
+// const cloudinary = require("cloudinary").v2;
 
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
@@ -23,11 +23,11 @@ app.use(cors());
 app.use(cookieParser(process.env.JWT_SECRET));
 
 // cloudinary config
-cloudinary.config({
-  cloud_name: process.env.CLOUDNARY_NAME,
-  api_key: CLOUDNARY_API_KEY,
-  api_secret: CLOUDNARY_API_SECRET,
-});
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDNARY_NAME,
+//   api_key: CLOUDNARY_API_KEY,
+//   api_secret: CLOUDNARY_API_SECRET,
+// });
 
 app.get("/", (req, res) => {
   res.send("Finally after so much long time....");
@@ -40,7 +40,6 @@ const userRouter = require("./routes/userRoutes");
 const orderRouter = require("./routes/orderRoutes");
 const cartRouter = require("./routes/cartRoutes");
 const searchRouter = require("./routes/searchRoute");
-const imgUploadRouter = require("./routes/imgUploadRoute");
 
 // routing map
 app.use("/api/v1/auth", authRouter);
@@ -49,7 +48,6 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/order", orderRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/search", searchRouter);
-app.use("/api/v1/upload/", imgUploadRouter);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
