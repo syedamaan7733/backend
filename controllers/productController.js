@@ -13,9 +13,9 @@ const getAllProducts = async (req, res) => {
   const products = await Product.find({})
     .sort({ createdAt: -1 })
     .select(
-      "brand colors price images itemSet material category gender article createdAt"
+      "brand colors inStock price images itemSet material category gender article createdAt"
     );
-  console.log("OK");
+  // console.log("OK");
 
   res.status(StatusCodes.OK).json({ count: products.length, products });
 };

@@ -51,7 +51,10 @@ const productSchema = new mongoose.Schema(
     images: [String],
     material: String,
     gender: String,
-    // season: String,
+    inStock: {
+      type: Boolean,
+      default: true,
+    },
     // style: String,
   },
   {
