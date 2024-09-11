@@ -27,9 +27,14 @@ const storage = multer.diskStorage({
   },
 });
 // Specifing the max image size
+// const upload = multer({
+//   storage: storage,
+//   limits: { fileSize: 7 * 1024 * 1024 },
+// });
+
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 7 * 1024 * 1024 },
+  storage: multer.memoryStorage(), // Store files in memory instead of disk
+  limits: { fileSize: 7 * 1024 * 1024 }, // Limit file size to 7MB
 });
 
 // Utility function to delete temporary files after upload
@@ -44,11 +49,93 @@ const deleteTempFiles = (files) => {
 };
 
 // function to upload in the cloud
-const uploadToCloudinary = (filePath) => {
-  return cloudinary.uploader.upload(filePath, {
-    folder: "salim_api_product_images",
+// const uploadToCloudinary = (filePath) => {
+//   return cloudinary.uploader.upload(filePath, {
+//     folder: "salim_api_product_images",
+//   });
+// };
+
+const uploadToCloudinary = (buffer, originalname) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "salim_api_product_images" },
+      (error, result) => {
+        if (error) {
+          return reject(new Error("Failed to upload to Cloudinary."));
+        }
+        resolve(result.secure_url);
+      }
+    );
+    uploadStream.end(buffer); // Stream the buffer to Cloudinary
   });
 };
+
+// router.post("/upload-img", (req, res) => {
+//   const uploadHandler = upload.any();
+
+//   uploadHandler(req, res, async (err) => {
+//     if (err) {
+//       throw new CustomError.BadRequestError("Something Went Wrong try again.");
+//     }
+//     try {
+//       // declaring all necessary val from the request also handling the error
+//       const files = req.files;
+//       if (!files || files.length === 0) {
+//         throw new CustomError.BadRequestError("Please upload images.");
+//       }
+
+//       const { primaryImages, colorImages } = req.body;
+
+//       if (Object.keys(req.body).length === 0) {
+//         throw new CustomError.BadRequestError(
+//           `Please provide the Body structure in which you want to store
+//            the secure URL links. And keys of both files and string must matchs
+//            the format`
+//         );
+//       }
+//       // parsed the JSON data
+//       const parsedPrimaryImages = JSON.parse(primaryImages);
+//       const parsedColorImages = JSON.parse(colorImages);
+
+//       // setting up response body
+//       const imgResponse = {
+//         primaryImages: [],
+//         colorImages: {},
+//       };
+
+//       // primaray Images upload functionality
+//       const primaryImgUploads = files
+//         .filter((f) => parsedPrimaryImages.includes(f.originalname))
+//         .map(async (file) => {
+//           const result = await uploadToCloudinary(file.path);
+//           fs.remove(file.path);
+//           return result.secure_url;
+//         });
+//       // uploading images to cloud and saving the link in the object
+//       imgResponse.primaryImages = await Promise.all(primaryImgUploads);
+
+//       // Color based image upload functionality
+//       for (let color in parsedColorImages) {
+//         const colorImgFiles = files.filter((f) =>
+//           parsedColorImages[color].includes(f.originalname)
+//         );
+//         const colorImgUploads = colorImgFiles.map(async (file) => {
+//           const result = await uploadToCloudinary(file.path);
+//           fs.remove(file.path);
+//           return result.secure_url;
+//         });
+
+//         imgResponse.colorImages[color] = await Promise.all(colorImgUploads);
+//       }
+//       // deleteTempFiles(files);
+//       res.status(StatusCodes.CREATED).json({ data: imgResponse });
+//     } catch (error) {
+//       res
+//         .status(StatusCodes.INTERNAL_SERVER_ERROR)
+//         .json({ error: error.message });
+//     }
+//   });
+// });
 
 router.post("/upload-img", (req, res) => {
   const uploadHandler = upload.any();
@@ -58,7 +145,6 @@ router.post("/upload-img", (req, res) => {
       throw new CustomError.BadRequestError("Something Went Wrong try again.");
     }
     try {
-      // declaring all necessary val from the request also handling the error
       const files = req.files;
       if (!files || files.length === 0) {
         throw new CustomError.BadRequestError("Please upload images.");
@@ -68,46 +154,47 @@ router.post("/upload-img", (req, res) => {
 
       if (Object.keys(req.body).length === 0) {
         throw new CustomError.BadRequestError(
-          `Please provide the Body structure in which you want to store 
-           the secure URL links. And keys of both files and string must matchs 
-           the format`
+          "Please provide the Body structure in which you want to store the secure URL links."
         );
       }
-      // parsed the JSON data
+
       const parsedPrimaryImages = JSON.parse(primaryImages);
       const parsedColorImages = JSON.parse(colorImages);
 
-      // setting up response body
       const imgResponse = {
         primaryImages: [],
         colorImages: {},
       };
 
-      // primaray Images upload functionality
+      // Upload primary images
       const primaryImgUploads = files
         .filter((f) => parsedPrimaryImages.includes(f.originalname))
         .map(async (file) => {
-          const result = await uploadToCloudinary(file.path);
-          fs.remove(file.path);
-          return result.secure_url;
+          const result = await uploadToCloudinary(
+            file.buffer,
+            file.originalname
+          );
+          return result;
         });
-      // uploading images to cloud and saving the link in the object
+
       imgResponse.primaryImages = await Promise.all(primaryImgUploads);
 
-      // Color based image upload functionality
+      // Upload color images
       for (let color in parsedColorImages) {
         const colorImgFiles = files.filter((f) =>
           parsedColorImages[color].includes(f.originalname)
         );
         const colorImgUploads = colorImgFiles.map(async (file) => {
-          const result = await uploadToCloudinary(file.path);
-          fs.remove(file.path);
-          return result.secure_url;
+          const result = await uploadToCloudinary(
+            file.buffer,
+            file.originalname
+          );
+          return result;
         });
 
         imgResponse.colorImages[color] = await Promise.all(colorImgUploads);
       }
-      // deleteTempFiles(files);
+
       res.status(StatusCodes.CREATED).json({ data: imgResponse });
     } catch (error) {
       res
