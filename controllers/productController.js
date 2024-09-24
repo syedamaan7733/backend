@@ -9,15 +9,48 @@ const createProduct = async (req, res) => {
   res.status(StatusCodes.CREATED).json({ product });
 };
 
+// const getAllProducts = async (req, res) => {
+
+//   const products = await Product.find({})
+//     .sort({ createdAt: -1 })
+//     .select(
+//       "brand colors inStock price images itemSet material category gender article createdAt"
+//     );
+//   // console.log("OK");
+
+//   res.status(StatusCodes.OK).json({ count: products.length, products });
+// };
 const getAllProducts = async (req, res) => {
+  // Extract page and limit from query parameters, provide default values
+  const { page = 1, limit = 10 } = req.query;
+
+  // Convert page and limit to numbers (they come as strings in query)
+  const pageNumber = parseInt(page, 10);
+  const limitNumber = parseInt(limit, 10);
+
+  // Calculate the number of products to skip
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Fetch the products with pagination
   const products = await Product.find({})
     .sort({ createdAt: -1 })
     .select(
       "brand colors inStock price images itemSet material category gender article createdAt"
-    );
-  // console.log("OK");
+    )
+    .skip(skip) // Skip the required number of products
+    .limit(limitNumber); // Limit the number of products
 
-  res.status(StatusCodes.OK).json({ count: products.length, products });
+  // Get the total count of products (for pagination metadata)
+  const totalProducts = await Product.countDocuments({});
+
+  // Send the response with pagination info
+  res.status(StatusCodes.OK).json({
+    count: products.length,
+    totalProducts,
+    totalPages: Math.ceil(totalProducts / limitNumber),
+    currentPage: pageNumber,
+    products,
+  });
 };
 
 const getSingleProduct = async (req, res) => {
@@ -61,32 +94,79 @@ const deleteProduct = async (req, res) => {
   ____________________________
 */
 
+// const searchCategory = async (req, res) => {
+//   const { gender } = req.query;
+//   // console.log(gender);
+
+//   try {
+//     let categories;
+
+//     if (!gender) {
+//       categories = await Product.distinct("category");
+//     } else {
+//       // Find all distinct categories in the Product collection based on the gender
+//       categories = await Product.distinct("category", { gender: gender });
+//       // console.log(categories);
+//     }
+//     //
+//     // Send the list of categories as a response
+//     res.status(200).json({
+//       success: true,
+//       data: categories,
+//       totalCategory: `Total category in ${gender} section: ${categories.length}`,
+//     });
+//   } catch (error) {
+//     // Handle errors
+//     console.error("Error fetching categories:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "An error occurred while fetching categories",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const searchCategory = async (req, res) => {
   const { gender } = req.query;
-  // console.log(gender);
 
   try {
     let categories;
+
+    // Step 1: Fetch distinct categories
     if (!gender) {
       categories = await Product.distinct("category");
     } else {
-      // Find all distinct categories in the Product collection based on the gender
       categories = await Product.distinct("category", { gender: gender });
-      // console.log(categories);
     }
-    //
-    // Send the list of categories as a response
+
+    // Step 2: Fetch one product image for each category
+    const categoryWithImages = await Promise.all(
+      categories.map(async (category) => {
+        // Find one product with the matching category
+        const product = await Product.findOne({ category })
+          .select("category images")
+          .sort({ createdAt: -1 }); // Sorting by creation date to get the latest product
+
+        return {
+          category,
+          image: product.images[0], // Take the first image (you can adjust if needed)
+        };
+      })
+    );
+
+    // Step 3: Send the response with categories and images
     res.status(200).json({
       success: true,
-      data: categories,
-      totalCategory: `Total category in ${gender} section: ${categories.length}`,
+      data: categoryWithImages,
+      totalCategories: `Total category in ${gender || "all"} section: ${
+        categories.length
+      }`,
     });
   } catch (error) {
-    // Handle errors
-    console.error("Error fetching categories:", error);
+    console.error("Error fetching categories with images:", error);
     res.status(500).json({
       success: false,
-      message: "An error occurred while fetching categories",
+      message: "An error occurred while fetching categories with images",
       error: error.message,
     });
   }

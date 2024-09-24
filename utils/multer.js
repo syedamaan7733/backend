@@ -146,6 +146,7 @@ router.post("/upload-img", (req, res) => {
     }
     try {
       const files = req.files;
+      console.log(files, req.body);
       if (!files || files.length === 0) {
         throw new CustomError.BadRequestError("Please upload images.");
       }
@@ -308,10 +309,11 @@ module.exports = router;
 //     }
 //   });
 // });
-// const obj = {
-//   primaryImages: ["primary_3.jpeg", "primary_2.jpeg", "primary_1.png"],
-//   colorImages: {
-//     red: ["red_shoes_2.webp", "red_shoes_1.png"],
-//     blue: ["blue_shoes_2.png", "blue_shoes_1.png"],
-//   },
-// };
+const obj = {
+  primaryImages: ["primary_3.jpeg", "primary_2.jpeg", "primary_1.png"],
+  colorImages: {
+    red: ["red_shoes_2.webp", "red_shoes_1.png"],
+    blue: ["blue_shoes_2.png", "blue_shoes_1.png"],
+    orange: ["orange_shoes_2.png", "orange_shoes_1.png"],
+  },
+};
