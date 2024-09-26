@@ -60,7 +60,7 @@ const uploadToCloudinary = (file, retryCount = 3) => {
   return new Promise((resolve, reject) => {
     const attemptUpload = (attemptsLeft) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: "salim_api_product_images" },
+        { folder: "salim_api_product_images", timeout: 20000 },
         (error, result) => {
           if (error) {
             if (attemptsLeft > 0) {
@@ -129,6 +129,8 @@ const uploadToCloudinary = (file, retryCount = 3) => {
 // primary
 router.post("/upload-img", upload.any(), async (req, res) => {
   try {
+    console.log(req.body);
+
     const primaryImages = req.files.filter(
       (file) => file.fieldname === "primaryImages[]"
     );
