@@ -8,6 +8,7 @@ const cloudinary = require("cloudinary").v2;
 const CustomError = require("../errors");
 const { StatusCodes } = require("http-status-codes");
 const { log } = require("console");
+const { type } = require("os");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDNARY_NAME,
@@ -49,13 +50,6 @@ const deleteTempFiles = (files) => {
   });
 };
 
-// function to upload in the cloud
-// const uploadToCloudinary = (filePath) => {
-//   return cloudinary.uploader.upload(filePath, {
-//     folder: "salim_api_product_images",
-//   });
-// };
-
 const uploadToCloudinary = (file, retryCount = 3) => {
   return new Promise((resolve, reject) => {
     const attemptUpload = (attemptsLeft) => {
@@ -86,51 +80,8 @@ const uploadToCloudinary = (file, retryCount = 3) => {
   });
 };
 
-// router.post("/upload-img", upload.any(), async (req, res) => {
-//   try {
-//     const colorImageResponse = [];
-//     const colorNames = req.body.colorName || [];
-
-//     for (let index = 0; index < colorNames.length; index++) {
-//       const colorName = colorNames[index];
-
-//       // Access the corresponding color images
-//       const colorFiles = req.files.filter(
-//         (file) => file.fieldname === `colorImg[${index}][]`
-//       );
-
-//       // Upload all the color images and wait for the result
-//       const uploadColorImage = await Promise.all(
-//         colorFiles.map((file) => uploadToCloudinary(file))
-//       );
-
-//       // Push the resolved images and color name to the response
-//       colorImageResponse.push({
-//         colorName: colorName,
-//         images: uploadColorImage, // now contains resolved URLs
-//       });
-//     }
-
-//     res.status(StatusCodes.OK).json({
-//       message: "Images Uploaded Successfully",
-//       images: {
-//         colorImage: colorImageResponse,
-//       },
-//     });
-//   } catch (error) {
-//     console.log(error.message);
-//     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-//       message: "Error uploading images",
-//       error: error.message,
-//     });
-//   }
-// });
-
-// primary
 router.post("/upload-img", upload.any(), async (req, res) => {
   try {
-    console.log(req.body);
-
     const primaryImages = req.files.filter(
       (file) => file.fieldname === "primaryImages[]"
     );
@@ -141,7 +92,19 @@ router.post("/upload-img", upload.any(), async (req, res) => {
     );
 
     const colorImageResponse = [];
-    const colorNames = req.body.colorName || [];
+    let colorNames;
+
+    if (typeof req.body.colorName === "string") {
+      try {
+        // Parse stringified JSON
+        colorNames = JSON.parse(req.body.colorName);
+      } catch (err) {
+        console.error("Error parsing JSON:", err);
+        return res.status(400).json({ error: "Invalid JSON format" });
+      }
+    } else {
+      colorNames = req.body.colorName || [];
+    }
 
     for (let index = 0; index < colorNames.length; index++) {
       const colorName = colorNames[index];
