@@ -7,6 +7,7 @@ const { v6: uuidv6, v4: uuidv4 } = require("uuid");
 const cloudinary = require("cloudinary").v2;
 const CustomError = require("../errors");
 const { StatusCodes } = require("http-status-codes");
+const { log } = require("console");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDNARY_NAME,
@@ -55,20 +56,183 @@ const deleteTempFiles = (files) => {
 //   });
 // };
 
-const uploadToCloudinary = (buffer, originalname) => {
+const uploadToCloudinary = (file, retryCount = 3) => {
   return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: "salim_api_product_images" },
-      (error, result) => {
-        if (error) {
-          return reject(new Error("Failed to upload to Cloudinary."));
+    const attemptUpload = (attemptsLeft) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "salim_api_product_images" },
+        (error, result) => {
+          if (error) {
+            if (attemptsLeft > 0) {
+              console.log(
+                `Retrying upload... Attempts left: ${attemptsLeft - 1}`
+              );
+              return attemptUpload(attemptsLeft - 1); // Retry the upload
+            }
+            return reject(
+              new CustomError.BadRequestError(
+                "Something went wrong while uploading image into the cloud.",
+                error.message
+              )
+            );
+          }
+          resolve(result.secure_url); // Resolve with the result from Cloudinary
         }
-        resolve(result.secure_url);
-      }
-    );
-    uploadStream.end(buffer); // Stream the buffer to Cloudinary
+      );
+      stream.end(file.buffer); // End the stream with the file buffer
+    };
+
+    attemptUpload(retryCount); // Start with the defined retry count
   });
 };
+
+// router.post("/upload-img", upload.any(), async (req, res) => {
+//   try {
+//     const colorImageResponse = [];
+//     const colorNames = req.body.colorName || [];
+
+//     for (let index = 0; index < colorNames.length; index++) {
+//       const colorName = colorNames[index];
+
+//       // Access the corresponding color images
+//       const colorFiles = req.files.filter(
+//         (file) => file.fieldname === `colorImg[${index}][]`
+//       );
+
+//       // Upload all the color images and wait for the result
+//       const uploadColorImage = await Promise.all(
+//         colorFiles.map((file) => uploadToCloudinary(file))
+//       );
+
+//       // Push the resolved images and color name to the response
+//       colorImageResponse.push({
+//         colorName: colorName,
+//         images: uploadColorImage, // now contains resolved URLs
+//       });
+//     }
+
+//     res.status(StatusCodes.OK).json({
+//       message: "Images Uploaded Successfully",
+//       images: {
+//         colorImage: colorImageResponse,
+//       },
+//     });
+//   } catch (error) {
+//     console.log(error.message);
+//     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       message: "Error uploading images",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// primary
+router.post("/upload-img", upload.any(), async (req, res) => {
+  try {
+    const primaryImages = req.files.filter(
+      (file) => file.fieldname === "primaryImages[]"
+    );
+
+    // handling primary Images
+    const primaryImageResponse = await Promise.all(
+      primaryImages.map((file) => uploadToCloudinary(file))
+    );
+
+    const colorImageResponse = [];
+    const colorNames = req.body.colorName || [];
+
+    for (let index = 0; index < colorNames.length; index++) {
+      const colorName = colorNames[index];
+
+      // Access the corresponding color images
+      const colorFiles = req.files.filter(
+        (file) => file.fieldname === `colorImg[${index}][]`
+      );
+
+      // Upload all the color images and wait for the result
+      const uploadColorImage = await Promise.all(
+        colorFiles.map((file) => uploadToCloudinary(file))
+      );
+
+      // Push the resolved images and color name to the response
+      colorImageResponse.push({
+        colorName: colorName,
+        images: uploadColorImage, // now contains resolved URLs
+      });
+    }
+
+    res.status(StatusCodes.OK).json({
+      message: "Images Uploaded Successfully",
+      images: {
+        primaryImage: primaryImageResponse,
+        colorImage: colorImageResponse,
+      },
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Error uploading images",
+      error: error.message,
+    });
+  }
+});
+
+// Below route will handle multiple or single array of images
+// router.post(
+//   "/upload-img",
+//   upload.fields([{ name: "primaryImages[]" }, { name: "galleryImg[]" }]),
+//   async (req, res) => {
+//     try {
+//       const productImg = req.files["productImg[]"] || [];
+//       const galleryImg = req.files["galleryImg[]"] || [];
+
+//       const productImagePromises = productImg.map((file) =>
+//         uploadToCloudinary(file)
+//       );
+//       const galleryImagePromises = galleryImg.map((file) =>
+//         uploadToCloudinary(file)
+//       );
+
+//       const productImagesURL = await Promise.all(productImagePromises);
+//       const galleryImagesURL = await Promise.all(galleryImagePromises);
+
+//       res.status(StatusCodes.OK).json({
+//         message: "Images Upload Successfully",
+//         images: {
+//           productImages: productImagesURL,
+//           galleryImages: galleryImagesURL,
+//         },
+//       });
+//     } catch (error) {
+//       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//         message: "Error uploading images",
+//         error: error.message,
+//       });
+//     }
+//   }
+// );
+
+// if there is single array of images
+// router.post("/upload-img", upload.array("images", 10), async (req, res) => {
+//   try {
+//     const uploadPromises = req.files.map((file) => {
+//       return uploadToCloudinary(file);
+//     });
+
+//     const uploadResult = await Promise.all(uploadPromises);
+
+//     const uploadImages = uploadResult.map((result) => result.secure_url);
+
+//     res.status(StatusCodes.OK).json({
+//       message: "Images uploaded successfully",
+//       images: uploadImages,
+//     });
+//   } catch (error) {
+//     res
+//       .status(StatusCodes.INTERNAL_SERVER_ERROR)
+//       .json({ message: "Error uploading images", error: error.message });
+//   }
+// });
 
 // router.post("/upload-img", (req, res) => {
 //   const uploadHandler = upload.any();
@@ -137,73 +301,73 @@ const uploadToCloudinary = (buffer, originalname) => {
 //   });
 // });
 
-router.post("/upload-img", (req, res) => {
-  const uploadHandler = upload.any();
+// router.post("/upload-img", (req, res) => {
+//   const uploadHandler = upload.any();
 
-  uploadHandler(req, res, async (err) => {
-    if (err) {
-      throw new CustomError.BadRequestError("Something Went Wrong try again.");
-    }
-    try {
-      const files = req.files;
-      console.log(files, req.body);
-      if (!files || files.length === 0) {
-        throw new CustomError.BadRequestError("Please upload images.");
-      }
+//   uploadHandler(req, res, async (err) => {
+//     if (err) {
+//       throw new CustomError.BadRequestError("Something Went Wrong try again.");
+//     }
+//     try {
+//       const files = req.files;
+//       console.log(files, req.body);
+//       if (!files || files.length === 0) {
+//         throw new CustomError.BadRequestError("Please upload images.");
+//       }
 
-      const { primaryImages, colorImages } = req.body;
+//       const { primaryImages, colorImages } = req.body;
 
-      if (Object.keys(req.body).length === 0) {
-        throw new CustomError.BadRequestError(
-          "Please provide the Body structure in which you want to store the secure URL links."
-        );
-      }
+//       if (Object.keys(req.body).length === 0) {
+//         throw new CustomError.BadRequestError(
+//           "Please provide the Body structure in which you want to store the secure URL links."
+//         );
+//       }
 
-      const parsedPrimaryImages = JSON.parse(primaryImages);
-      const parsedColorImages = JSON.parse(colorImages);
+//       const parsedPrimaryImages = JSON.parse(primaryImages);
+//       const parsedColorImages = JSON.parse(colorImages);
 
-      const imgResponse = {
-        primaryImages: [],
-        colorImages: {},
-      };
+//       const imgResponse = {
+//         primaryImages: [],
+//         colorImages: {},
+//       };
 
-      // Upload primary images
-      const primaryImgUploads = files
-        .filter((f) => parsedPrimaryImages.includes(f.originalname))
-        .map(async (file) => {
-          const result = await uploadToCloudinary(
-            file.buffer,
-            file.originalname
-          );
-          return result;
-        });
+//       // Upload primary images
+//       const primaryImgUploads = files
+//         .filter((f) => parsedPrimaryImages.includes(f.originalname))
+//         .map(async (file) => {
+//           const result = await uploadToCloudinary(
+//             file.buffer,
+//             file.originalname
+//           );
+//           return result;
+//         });
 
-      imgResponse.primaryImages = await Promise.all(primaryImgUploads);
+//       imgResponse.primaryImages = await Promise.all(primaryImgUploads);
 
-      // Upload color images
-      for (let color in parsedColorImages) {
-        const colorImgFiles = files.filter((f) =>
-          parsedColorImages[color].includes(f.originalname)
-        );
-        const colorImgUploads = colorImgFiles.map(async (file) => {
-          const result = await uploadToCloudinary(
-            file.buffer,
-            file.originalname
-          );
-          return result;
-        });
+//       // Upload color images
+//       for (let color in parsedColorImages) {
+//         const colorImgFiles = files.filter((f) =>
+//           parsedColorImages[color].includes(f.originalname)
+//         );
+//         const colorImgUploads = colorImgFiles.map(async (file) => {
+//           const result = await uploadToCloudinary(
+//             file.buffer,
+//             file.originalname
+//           );
+//           return result;
+//         });
 
-        imgResponse.colorImages[color] = await Promise.all(colorImgUploads);
-      }
+//         imgResponse.colorImages[color] = await Promise.all(colorImgUploads);
+//       }
 
-      res.status(StatusCodes.CREATED).json({ data: imgResponse });
-    } catch (error) {
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ error: error.message });
-    }
-  });
-});
+//       res.status(StatusCodes.CREATED).json({ data: imgResponse });
+//     } catch (error) {
+//       res
+//         .status(StatusCodes.INTERNAL_SERVER_ERROR)
+//         .json({ error: error.message });
+//     }
+//   });
+// });
 
 module.exports = router;
 
