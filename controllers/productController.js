@@ -221,7 +221,7 @@ const searchProduct = async (req, res) => {
 
     // Execute the query with pagination
     const products = await Product.find(searchQuery)
-      .select("brand article category gender") // Only select the productName field
+      .select("brand article category gender images") // Only select the productName field
       .skip(skip) // Skip the appropriate number of results
       .limit(limit); // Limit the number of results returned
 
