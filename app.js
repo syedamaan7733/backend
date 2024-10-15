@@ -22,13 +22,6 @@ app.set("trust proxy", 1);
 app.use(cors());
 app.use(cookieParser(process.env.JWT_SECRET));
 
-// cloudinary config
-// cloudinary.config({
-//   cloud_name: process.env.CLOUDNARY_NAME,
-//   api_key: CLOUDNARY_API_KEY,
-//   api_secret: CLOUDNARY_API_SECRET,
-// });
-
 app.get("/", (req, res) => {
   res.send("Finally after so much long time....");
 });
@@ -41,7 +34,6 @@ const orderRouter = require("./routes/orderRoutes");
 const cartRouter = require("./routes/cartRoutes");
 const searchRouter = require("./routes/searchRoute");
 const uploadImgRouter = require("./utils/multer");
-// const uploadImgRouter = require("./routes/uploadImg");
 
 // routing map
 app.use("/api/v1", uploadImgRouter);

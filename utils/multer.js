@@ -141,6 +141,7 @@ router.post("/upload-img", upload.any(), async (req, res) => {
     });
   }
 });
+module.exports = router;
 
 // Below route will handle multiple or single array of images
 // router.post(
@@ -198,143 +199,6 @@ router.post("/upload-img", upload.any(), async (req, res) => {
 //       .json({ message: "Error uploading images", error: error.message });
 //   }
 // });
-
-// router.post("/upload-img", (req, res) => {
-//   const uploadHandler = upload.any();
-
-//   uploadHandler(req, res, async (err) => {
-//     if (err) {
-//       throw new CustomError.BadRequestError("Something Went Wrong try again.");
-//     }
-//     try {
-//       // declaring all necessary val from the request also handling the error
-//       const files = req.files;
-//       if (!files || files.length === 0) {
-//         throw new CustomError.BadRequestError("Please upload images.");
-//       }
-
-//       const { primaryImages, colorImages } = req.body;
-
-//       if (Object.keys(req.body).length === 0) {
-//         throw new CustomError.BadRequestError(
-//           `Please provide the Body structure in which you want to store
-//            the secure URL links. And keys of both files and string must matchs
-//            the format`
-//         );
-//       }
-//       // parsed the JSON data
-//       const parsedPrimaryImages = JSON.parse(primaryImages);
-//       const parsedColorImages = JSON.parse(colorImages);
-
-//       // setting up response body
-//       const imgResponse = {
-//         primaryImages: [],
-//         colorImages: {},
-//       };
-
-//       // primaray Images upload functionality
-//       const primaryImgUploads = files
-//         .filter((f) => parsedPrimaryImages.includes(f.originalname))
-//         .map(async (file) => {
-//           const result = await uploadToCloudinary(file.path);
-//           fs.remove(file.path);
-//           return result.secure_url;
-//         });
-//       // uploading images to cloud and saving the link in the object
-//       imgResponse.primaryImages = await Promise.all(primaryImgUploads);
-
-//       // Color based image upload functionality
-//       for (let color in parsedColorImages) {
-//         const colorImgFiles = files.filter((f) =>
-//           parsedColorImages[color].includes(f.originalname)
-//         );
-//         const colorImgUploads = colorImgFiles.map(async (file) => {
-//           const result = await uploadToCloudinary(file.path);
-//           fs.remove(file.path);
-//           return result.secure_url;
-//         });
-
-//         imgResponse.colorImages[color] = await Promise.all(colorImgUploads);
-//       }
-//       // deleteTempFiles(files);
-//       res.status(StatusCodes.CREATED).json({ data: imgResponse });
-//     } catch (error) {
-//       res
-//         .status(StatusCodes.INTERNAL_SERVER_ERROR)
-//         .json({ error: error.message });
-//     }
-//   });
-// });
-
-// router.post("/upload-img", (req, res) => {
-//   const uploadHandler = upload.any();
-
-//   uploadHandler(req, res, async (err) => {
-//     if (err) {
-//       throw new CustomError.BadRequestError("Something Went Wrong try again.");
-//     }
-//     try {
-//       const files = req.files;
-//       console.log(files, req.body);
-//       if (!files || files.length === 0) {
-//         throw new CustomError.BadRequestError("Please upload images.");
-//       }
-
-//       const { primaryImages, colorImages } = req.body;
-
-//       if (Object.keys(req.body).length === 0) {
-//         throw new CustomError.BadRequestError(
-//           "Please provide the Body structure in which you want to store the secure URL links."
-//         );
-//       }
-
-//       const parsedPrimaryImages = JSON.parse(primaryImages);
-//       const parsedColorImages = JSON.parse(colorImages);
-
-//       const imgResponse = {
-//         primaryImages: [],
-//         colorImages: {},
-//       };
-
-//       // Upload primary images
-//       const primaryImgUploads = files
-//         .filter((f) => parsedPrimaryImages.includes(f.originalname))
-//         .map(async (file) => {
-//           const result = await uploadToCloudinary(
-//             file.buffer,
-//             file.originalname
-//           );
-//           return result;
-//         });
-
-//       imgResponse.primaryImages = await Promise.all(primaryImgUploads);
-
-//       // Upload color images
-//       for (let color in parsedColorImages) {
-//         const colorImgFiles = files.filter((f) =>
-//           parsedColorImages[color].includes(f.originalname)
-//         );
-//         const colorImgUploads = colorImgFiles.map(async (file) => {
-//           const result = await uploadToCloudinary(
-//             file.buffer,
-//             file.originalname
-//           );
-//           return result;
-//         });
-
-//         imgResponse.colorImages[color] = await Promise.all(colorImgUploads);
-//       }
-
-//       res.status(StatusCodes.CREATED).json({ data: imgResponse });
-//     } catch (error) {
-//       res
-//         .status(StatusCodes.INTERNAL_SERVER_ERROR)
-//         .json({ error: error.message });
-//     }
-//   });
-// });
-
-module.exports = router;
 
 // Configure Multer to store files in public/data/images
 // const storage = multer.diskStorage({
@@ -438,11 +302,12 @@ module.exports = router;
 //     }
 //   });
 // });
-const obj = {
-  primaryImages: ["primary_3.jpeg", "primary_2.jpeg", "primary_1.png"],
-  colorImages: {
-    red: ["red_shoes_2.webp", "red_shoes_1.png"],
-    blue: ["blue_shoes_2.png", "blue_shoes_1.png"],
-    orange: ["orange_shoes_2.png", "orange_shoes_1.png"],
-  },
-};
+
+// const obj = {
+//   primaryImages: ["primary_3.jpeg", "primary_2.jpeg", "primary_1.png"],
+//   colorImages: {
+//     red: ["red_shoes_2.webp", "red_shoes_1.png"],
+//     blue: ["blue_shoes_2.png", "blue_shoes_1.png"],
+//     orange: ["orange_shoes_2.png", "orange_shoes_1.png"],
+//   },
+// };
