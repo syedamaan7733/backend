@@ -116,7 +116,7 @@ const orderHistory = async (req, res) => {
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate({ path: "userId", select: "name" })
+      .populate({ path: "userId", select: "name phone" })
       .populate("items.productId")
       .sort({ createdAt: -1 });
 
