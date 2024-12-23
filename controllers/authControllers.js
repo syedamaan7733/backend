@@ -76,7 +76,11 @@ const logIn = async (req, res) => {
 
   const userToken = createTokenUser(user);
   const token = createJWT({ payload: userToken });
-
+  // res.cookie("token", "logout", {
+  //   httpOnly: true,
+  //   secure: process.env.NODEE_ENV === "production",
+  //   expires: new Date.now() + 1000 * 60 * 60 * 24 * 300,
+  // });
   res.status(StatusCodes.OK).json({ token, userToken });
 };
 
