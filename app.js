@@ -1,32 +1,36 @@
 require("dotenv").config();
 require("express-async-errors");
 const express = require("express");
+const rateLimit = require("express-rate-limit");
+
 const app = express();
 
-// packages
+// Packages
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
-// const cloudinary = require("cloudinary").v2;
 
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
-// connectDV
+// Connect DB
 const connectDB = require("./db/connect");
 
-// middleware
+// Middleware
 app.use(express.json());
 app.use(morgan("tiny"));
 app.set("trust proxy", 1);
 app.use(cors());
 app.use(cookieParser(process.env.JWT_SECRET));
 
-app.get("/", (req, res) => {
-  res.send("Finally after so much long time....");
+// Apply rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
 });
+app.use(limiter);
 
-// routes mapping
+// Routes
 const authRouter = require("./routes/authRoutes");
 const productRouter = require("./routes/productRoutes");
 const userRouter = require("./routes/userRoutes");
@@ -35,7 +39,6 @@ const cartRouter = require("./routes/cartRoutes");
 const searchRouter = require("./routes/searchRoute");
 const uploadImgRouter = require("./utils/multer");
 
-// routing map
 app.use("/api/v1", uploadImgRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/products", productRouter);
@@ -47,16 +50,17 @@ app.use("/api/v1/search", searchRouter);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-// Start-up function
+// Start server
 const port = process.env.PORT || 7000;
 const start = async () => {
   try {
     await connectDB(process.env.MONGO_URI);
     app.listen(port, () => {
-      console.log(`Server is listening in in PORT:${port}`);
+      console.log(`Server is listening on PORT:${port}`);
     });
   } catch (error) {
     console.log(error);
   }
 };
+
 start();
