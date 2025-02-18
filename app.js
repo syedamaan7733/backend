@@ -20,6 +20,7 @@ const connectDB = require("./db/connect");
 app.use(express.json());
 app.use(morgan("tiny"));
 app.set("trust proxy", 1);
+app.use(helmet());
 app.use(cors());
 app.use(cookieParser(process.env.JWT_SECRET));
 
@@ -30,6 +31,13 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+app.get("/", (req, res) => {
+  res.json({
+    status: "healthy",
+    version: "1.5.45",
+    uptime: process.uptime(),
+  });
+});
 // Routes
 const authRouter = require("./routes/authRoutes");
 const productRouter = require("./routes/productRoutes");
@@ -38,6 +46,7 @@ const orderRouter = require("./routes/orderRoutes");
 const cartRouter = require("./routes/cartRoutes");
 const searchRouter = require("./routes/searchRoute");
 const uploadImgRouter = require("./utils/multer");
+const { default: helmet } = require("helmet");
 
 app.use("/api/v1", uploadImgRouter);
 app.use("/api/v1/auth", authRouter);
