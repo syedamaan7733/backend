@@ -9,7 +9,7 @@ const app = express();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
-
+const { default: helmet } = require("helmet");
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
@@ -46,7 +46,6 @@ const orderRouter = require("./routes/orderRoutes");
 const cartRouter = require("./routes/cartRoutes");
 const searchRouter = require("./routes/searchRoute");
 const uploadImgRouter = require("./utils/multer");
-const { default: helmet } = require("helmet");
 
 app.use("/api/v1", uploadImgRouter);
 app.use("/api/v1/auth", authRouter);
